@@ -1,0 +1,164 @@
+<html>
+
+<head>
+    <title>OpenCV_Flask</title>
+    <!-- <style type="text/css">
+      table {
+      float : left;
+      }
+    </style>         -->
+    <!-- <script type="text/javascript">
+      var a = {{ var_a }}
+      var b = {{ var_b }}
+    </script> -->
+    <script src="{{url_for('static', filename='app.js')}}"></script>
+    <!-- <script type="text/javascript" src="static/app.js"></script> -->
+</head>
+
+<body>
+    <h1>MVISIA</h1>
+    <table border=0>
+        <tr>
+            {% if not Camerashow %}
+            <td>
+                <a href="{{ url_for( 'startcamera' ) }}">
+                    <img width="32" height="32" src="{{ url_for( 'static', filename = 'camerastart.png' ) }}" alt="start camera" class="btn">
+                </a>
+            </td>
+            {% endif %} {% if Camerashow %}
+            <td>
+                <div>
+                    <img width="360" height="240" src="{{ url_for('video_feed') }}">
+                </div>
+            </td>
+            <!-- {% endif %}
+        {% if Camerashow %} -->
+            <td>
+                <div style="display: grid">
+                    <div>
+                        <a href="{{ url_for( 'stopcamera' ) }}">
+                            <img width="32" height="32" src="{{ url_for('static', filename = 'camerastop.png' ) }}" alt="stop camera" class="btn">
+                        </a>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('camera') }}">
+                            <!-- take a snapshot -->
+                            <img width="32" height="32" src="{{ url_for('static',filename='picture.png') }}" alt="take picture" class="btn">
+                        </a>
+                    </div>
+                    {% if workflow %}
+                    <div>
+                        <img width="32" height="32" src="{{ url_for('static',filename='crop.png') }}" alt="Crop" class="btn" onclick="divShow('divcrop')">
+                    </div>
+                    <div>
+                        <img width="32" height="32" src="{{ url_for('static',filename='binarize.png') }}" alt="Binarize" class="btn" onclick="divShow('divbinarize')">
+                    </div>
+                    <div>
+                        <a href="{{ url_for( 'background_subtract') }}">
+                            <img width="32" height="32" src="{{ url_for('static',filename='subtract.png') }}" alt="subtract picture" class="btn">
+                        </a>
+                    </div>
+                    <div>
+                        <a href="{{ url_for( 'detect_faces') }}">
+                            <img width="32" height="32" src="{{ url_for('static',filename='faces.png') }}" alt="detect faces" class="btn">
+                        </a>
+                    </div>
+                    <div>
+                        <img width="32" height="32" src="{{ url_for('static',filename='delete.png') }}" alt="Delete Job" class="btn" onclick="divShow('divdelete')">
+                    </div>
+            </td>
+            <td>
+                <div id="divcrop" style="display: none;">
+                    <form action="{{ url_for( 'addjob' ) }}">
+                        <fieldset style="display: grid">
+                            <legend> Crop parameters </legend>
+                            <label for="crop">x</label>
+                            <input type="number" id="crop" name="x" value="0">
+                            <label for="crop">dx</label>
+                            <input type="number" id="crop" name="dx" value="720">
+                            <label for="crop">y</label>
+                            <input type="number" id="crop" name="y" value="360">
+                            <label for="crop">dy</label>
+                            <input type="number" id="crop" name="dy" value="720">
+                            <input type="hidden" name="operation" value="crop">
+                            <input type="submit" value="Crop">
+                        </fieldset>
+                    </form>
+                </div>
+                <div id="divbinarize" style="display: none;">
+                    <form action="{{ url_for( 'binarize' ) }}">
+                        <fieldset style="display: grid">
+                            <legend> Binarize Parameters </legend>
+                            <label for="binarinze">R</label>
+                            <input type="number" id="binarize" name="R" value="127" min="0" max="255">
+                            <label for="binarinze">G</label>
+                            <input type="number" id="binarize" name="G" value="127" min="0" max="255">
+                            <label for="binarinze">B</label>
+                            <input type="number" id="binarize" name="B" value="127" min="0" max="255">
+                            <label for="binarinze">k</label>
+                            <input type="number" id="binarize" name="k" value="2500">
+                            <input type="submit" value="Binarize">
+                        </fieldset>
+                    </form>
+                </div>
+                <div id="divdelete" style="display: none;">
+                    <form action="{{ url_for( 'deljob' ) }}">
+                        <fieldset style="display: grid">
+                            <legend>Delete an operation</legend>
+                            <label for="idx">Choose operation:</label>
+                            <select id="idx" name="idx">
+                        {% for i in workflow[ : ] %}
+                          <option value="{{ loop.index0 }}">{{ loop.index0 ~ ": " ~  i.operation }}</option>
+                        {% endfor %}
+                      </select>
+                            <input type=submit value="Delete">
+                        </fieldset>
+                    </form>
+                </div>
+            </td>
+            {% endif %} {% endif %}
+        </tr>
+    </table>
+
+    <table border=1 style="width: 100%;">
+        {% if workflow %}
+        <tr>
+            <th>Operation #</th>
+            <th>Operation Details</th>
+            <th>Resulting Image </th>
+        </tr>
+        {% endif %} {% for i in workflow[ : ] %}
+        <!-- {% if i %} -->
+        <tr>
+            <td align="center">
+                {{ loop.index0 }}
+            </td>
+            <td align="center">
+                <!-- {{ i }} -->
+                <p>{{ "Operation : " ~ i.operation }}</p>
+                <p>{{ "Parameters : " ~ i.parameters }}</p>
+                <p>{{ "Input Image : " ~ i.inpath }}</p>
+                <p>{{ "Output Image : " ~ i.outpath }}</p>
+                {% if i.error %}
+                <p>{{ "Error : " ~ i.error }}</p>
+                {% endif %}
+            </td>
+            <td align="center">
+                <a href="{{ url_for('static', filename='captures/' ~ i.outpath) }}" download>
+                    <img width="360" height="240" style="vertical-align: middle" src="{{ url_for('static', filename='captures/' ~ i.outpath) }}" alt="{{ i.operation }}">
+                </a>
+                <!-- {% if Img1show %}
+            <a href="{{ url_for('static', filename=Img1path) }}" download>
+              <img width="360" height="240" src="{{ url_for('static', filename=Img1path) }}" alt="img1">
+            </a>
+          {% endif %} -->
+            </td>
+        </tr>
+        <!-- {% endif %} -->
+        {% endfor %}
+    </table>
+    <!-- <button form="">Iniciar</button>
+    <button form="">Parar</button> -->
+</body>
+
+</html>
